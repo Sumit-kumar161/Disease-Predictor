@@ -32,7 +32,7 @@ with st.sidebar:
             st.session_state.email = None
             st.session_state.doctor_id = None
             st.success("You have been logged out.")
-            st.experimental_rerun()
+            st.rerun()
     else:
         st.info("🔐 Please log in to access the app features.")
 
