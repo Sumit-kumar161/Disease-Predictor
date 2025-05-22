@@ -1,0 +1,18 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Model files (if you want to exclude them)
+models/*.sav
+
+# Environment variables
+.env
+
+# Reports (optional - if you generate PDFs here)
+reports/*.pdf
+
+# VSCode settings (optional)
+.vscode/
