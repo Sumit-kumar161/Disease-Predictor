@@ -5,8 +5,6 @@
 __pycache__/
 *.py[cod]
 
-# Model files (if you want to exclude them)
-models/*.sav
 
 # Environment variables
 .env
