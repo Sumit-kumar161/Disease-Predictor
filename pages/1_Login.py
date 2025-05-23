@@ -2,6 +2,7 @@ import streamlit as st
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+import re
 from dotenv import load_dotenv
 import time
 
@@ -12,11 +13,25 @@ client = MongoClient(mongo_uri)
 db = client["disease_predictor"]
 users_collection = db["users"]
 
+# Utility validators
+def is_valid_email(email):
+    return bool(re.match(r"[^@]+@[^@]+\.[^@]+", email))
+
+def is_strong_password(password):
+    return len(password) >= 6 and re.search(r"[A-Za-z]", password) and re.search(r"[0-9]", password)
+
 # User functions
 def signup(email, password, doctor_id, org_id):
     if users_collection.find_one({"email": email}):
         st.error("Email already registered.")
         return False
+    if users_collection.find_one({"doctor_id": doctor_id}):
+        st.error("Doctor ID already in use.")
+        return False
+    if users_collection.find_one({"organization_id": org_id}):
+        st.error("Organization ID already in use.")
+        return False
+
     hashed_password = generate_password_hash(password)
     users_collection.insert_one({
         "email": email,
@@ -52,7 +67,6 @@ def main():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
 
-    # Auth block
     if not st.session_state.authenticated:
         with st.container():
             auth_mode = st.radio("🔐 Choose Action", ["Login", "Signup"], horizontal=True)
@@ -63,31 +77,38 @@ def main():
                 password = st.text_input("🔑 Password", type="password")
                 doctor_id = st.text_input("🆔 Doctor ID")
                 org_id = st.text_input("🏢 Organization ID")
+
                 if st.button("Sign Up"):
-                    if email and password and doctor_id and org_id:
+                    if not (email and password and doctor_id and org_id):
+                        st.error("❗ Please fill in all the fields.")
+                    elif not is_valid_email(email):
+                        st.error("❗ Please enter a valid email address.")
+                    elif not is_strong_password(password):
+                        st.error("❗ Password must be at least 6 characters and contain both letters and numbers.")
+                    else:
                         if signup(email, password, doctor_id, org_id):
                             st.session_state.authenticated = True
                             st.session_state.email = email
                             st.session_state.doctor_id = doctor_id
                             st.rerun()
-                    else:
-                        st.error("❗ Please fill in all the fields.")
 
             else:
                 st.subheader("🔓 Login to Your Account")
                 email = st.text_input("📧 Email", key="login_email")
                 password = st.text_input("🔑 Password", type="password", key="login_password")
+
                 if st.button("Login"):
-                    if login(email, password):
+                    if not email or not password:
+                        st.error("❗ Please enter both email and password.")
+                    elif not is_valid_email(email):
+                        st.error("❗ Please enter a valid email address.")
+                    elif login(email, password):
                         st.rerun()
                     else:
                         st.error("❌ Invalid email or password")
 
     else:
-        # Show doctor_id instead of email after login
-        st.success(f"Welcome Doctor !")
-
-        # Auto redirect (2 seconds)
+        st.success(f"Welcome Doctor!")
         with st.spinner("🔁 Redirecting to the Predictor..."):
             time.sleep(2)
             st.switch_page("pages/2_Predictor.py")

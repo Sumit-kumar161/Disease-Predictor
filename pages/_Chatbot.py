@@ -7,7 +7,17 @@ import os
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 
-# Logout button in sidebar
+# ✅ Initialize session state keys safely
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "email" not in st.session_state:
+    st.session_state.email = None
+if "doctor_id" not in st.session_state:
+    st.session_state.doctor_id = None
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+# Sidebar: Logout and login status
 with st.sidebar:
     st.title("Sumit HealthCare 🏥")
     st.markdown("---")
@@ -23,16 +33,13 @@ with st.sidebar:
     else:
         st.info("🔐 Please log in to access the app features.")
 
-if "authenticated" not in st.session_state or not st.session_state.authenticated:
+# ✅ Stop access if not authenticated
+if not st.session_state.authenticated:
     st.warning("🔐 Please log in to access the chatbot.")
     st.stop()
 
 # Configure API key
 genai.configure(api_key=api_key)
-
-# Initialize chat history in Streamlit state
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
 
 st.title("🩺 Doctor's Assistant Chatbot")
 
@@ -44,24 +51,24 @@ for msg in st.session_state.chat_history:
 # Input from user
 user_input = st.chat_input("Ask your medical question here...")
 
+# System prompt
 system_prompt = (
     "You are a highly professional medical assistant AI helping doctors. "
     "Provide accurate, concise, and evidence-based medical advice. "
     "If unsure, recommend consulting a specialist."
 )
 
-# Initialize the chat model
-model = genai.GenerativeModel('gemini-2.0-flash')  # Updated model name
+# Initialize Gemini model
+model = genai.GenerativeModel('gemini-2.0-flash')
 
+# Generate and display response
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
-    
+
     try:
-        # Start a chat session if it doesn't exist
         if "chat_session" not in st.session_state:
             st.session_state.chat_session = model.start_chat(history=[])
-        
-        # Send the message with system prompt context
+
         response = st.session_state.chat_session.send_message(
             f"{system_prompt}\n\n{user_input}"
         )

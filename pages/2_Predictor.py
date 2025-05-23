@@ -227,7 +227,7 @@ def main():
     st.subheader(f"🧪 Enter details for {disease} prediction")
     inputs = {}
     for field in input_fields:
-        value = st.number_input(field, step=0.1, format="%.3f")
+        value = st.number_input(field, step=0.0001, format="%.6f")
         inputs[field] = value
 
     if st.button("Predict"):
@@ -242,14 +242,23 @@ def main():
         risk_percent = None
         prob_error = False
 
+        if disease == 'Breast Cancer':
+            prediction = 1 - prediction  # This will flip 0 to 1 and 1 to 0
+
         try:
             if hasattr(model, "predict_proba"):
                 probs = model.predict_proba(input_array)
-                risk_percent = probs[0][1] * 100
+                if disease == 'Breast Cancer':
+                    risk_percent = probs[0][0] * 100
+                else:
+                    risk_percent = probs[0][1] * 100
             elif hasattr(model, "decision_function"):
                 dec_score = model.decision_function(input_array)[0]
                 risk_prob = expit(dec_score)  # sigmoid
-                risk_percent = risk_prob * 100
+                if disease == 'Breast Cancer':
+                    risk_percent = (1 - risk_prob) * 100
+                else:
+                    risk_percent = risk_prob * 100
         except Exception:
             prob_error = True
 
